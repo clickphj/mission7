@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="깃발을 찾아라">
+<meta name="theme-color" content="#7a5230">
+<title>🚩 깃발을 찾아라!</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --gold: #d4a84b;
+    --dark-brown: #3a2010;
+    --mid-brown: #7a5230;
+    --light-parchment: #f5e6c0;
+    --parchment: #e8d090;
+    --card-h: 170px;
+  }
+
+  html, body {
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background-color: #c8a96e;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(180,140,80,0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(140,100,50,0.4) 0%, transparent 50%);
+    font-family: 'Noto Sans KR', sans-serif;
+    padding: env(safe-area-inset-top, 0) 0 calc(env(safe-area-inset-bottom, 0) + 20px);
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/xml' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 600px; margin: 0 auto; padding: 0 14px 30px; }
+
+  /* ── Header ── */
+  header { text-align: center; padding: 18px 0 14px; }
+  .header-banner {
+    display: inline-block;
+    background: linear-gradient(135deg, #5a3a1a, #7a5230, #5a3a1a);
+    border: 3px solid var(--dark-brown);
+    border-radius: 10px;
+    padding: 14px 30px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,150,0.2);
+    position: relative;
+  }
+  .header-banner::before, .header-banner::after { content:'✦'; position:absolute; top:50%; transform:translateY(-50%); color:var(--gold); font-size:16px; }
+  .header-banner::before { left:10px; } .header-banner::after { right:10px; }
+  .t-sub { font-size:11px; color:var(--gold); letter-spacing:3px; margin-bottom:4px; }
+  .t-main { font-size:clamp(22px,6vw,32px); font-weight:900; color:#f5e6c0; text-shadow:2px 2px 4px rgba(0,0,0,0.5); letter-spacing:2px; }
+  .t-main span { color:#e8c060; }
+  .t-desc { font-size:11px; color:#c8a86a; margin-top:6px; }
+  
+  .divider { display:flex; align-items:center; gap:8px; margin:14px 0 8px; color:#7a5a30; font-size:14px; letter-spacing:3px; }
+  .divider::before,.divider::after { content:''; flex:1; height:2px; background:repeating-linear-gradient(90deg,#8a6a40 0,#8a6a40 5px,transparent 5px,transparent 9px); opacity:.6; }
+
+  /* ── Rules Box & Popup Logic ── */
+  .rules-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(30,15,5,0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  .rules-overlay.active { opacity: 1; pointer-events: all; }
+
+  .rules-box {
+    width: 100%;
+    background: #e8d090;
+    border: 3px dashed rgba(122, 82, 48, 0.5);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    position: relative;
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), margin 0.5s ease;
+  }
+
+  .rules-overlay .rules-box {
+    width: min(90vw, 450px);
+    transform: scale(0.5);
+  }
+  .rules-overlay.active .rules-box {
+    transform: scale(1);
+  }
+
+  #staticRulesContainer {
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  .rules-title {
+    font-size: 17px;
+    font-weight: 900;
+    color: var(--dark-brown);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rules-item {
+    font-size: 14px;
+    color: #4a2e0e;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    padding-left: 24px;
+    position: relative;
+  }
+  .rules-item::before {
+    content: '◈';
+    position: absolute; left: 0;
+    color: var(--mid-brown);
+    font-size: 11px; top: 2px;
+  }
+  .rules-item strong { color: #8a4010; font-weight: 700; }
+  
+  .example-tag {
+    display: inline-block;
+    background: #3a2010;
+    color: #f5e6c0;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 5px;
+  }
+
+  .rules-confirm-btn {
+    display: block; width: 100%;
+    margin-top: 20px; padding: 14px;
+    background: linear-gradient(to bottom, #5a3a1a, #3a2010);
+    color: var(--gold);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    font-size: 16px; font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  .rules-confirm-btn:active { transform: scale(0.96); }
+
+  /* ── Grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 360px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ── Card (thumbnail) ── */
+  .card-thumb {
+    height: var(--card-h);
+    cursor: pointer;
+    border-radius: 10px;
+    border: 2.5px solid var(--dark-brown);
+    background: linear-gradient(160deg, #d4a84b 0%, #b88830 45%, #8a6020 100%);
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,240,180,0.3);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+    transition: transform .15s, box-shadow .15s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .card-thumb:active { transform: scale(.95); box-shadow: 1px 1px 6px rgba(0,0,0,0.4); }
+  .card-thumb::before { content:''; position:absolute; inset:5px; border:1.5px dashed rgba(255,230,150,0.4); border-radius:6px; pointer-events:none; }
+
+  /* ── Locked State ── */
+  .card-thumb.locked {
+    cursor: default;
+    filter: brightness(0.7) grayscale(0.3);
+    pointer-events: none;
+  }
+  .lock-overlay {
+    position: absolute; inset: 0;
+    background: rgba(40, 30, 15, 0.6);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 10;
+    backdrop-filter: blur(1.5px);
+    -webkit-backdrop-filter: blur(1.5px);
+  }
+  .lock-icon { font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); opacity: 0.9; margin-bottom: 8px; }
+  .lock-text { font-size: 22px; font-weight: 900; color: rgba(255, 255, 255, 0.4); letter-spacing: 1px; }
+
+  .thumb-icon { font-size:28px; margin-bottom:5px; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
+  .thumb-num {
+    font-size:10px; font-weight:700; color:rgba(60,30,5,0.75);
+    background:rgba(255,240,180,0.3); border-radius:10px; padding:1px 8px; letter-spacing:1px;
+  }
+  .thumb-title { font-size:9.5px; font-weight:700; color:var(--dark-brown); text-align:center; padding:0 10px; margin-top:4px; line-height:1.35; }
+  .thumb-hint { font-size:8.5px; color:rgba(60,30,5,0.5); margin-top:5px; }
+  .thumb-bg-num { position:absolute; bottom:2px; right:8px; font-size:42px; font-weight:900; color:rgba(255,240,180,0.18); font-style:italic; line-height:1; }
+
+  /* ── Mission Card Modal ── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(30,15,5,0.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s;
+  }
+  .overlay.active { opacity: 1; pointer-events: all; }
+
+  .big-card-wrap {
+    width: min(88vw, 380px);
+    height: min(72vh, 480px);
+    perspective: 1200px;
+    position: relative;
+  }
+  .big-card-inner {
+    width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform .65s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+  }
+  .big-card-inner.flipped { transform: rotateY(180deg); }
+
+  .big-front, .big-back {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 16px;
+    border: 3px solid var(--dark-brown);
+    overflow: hidden;
+  }
+
+  .big-front {
+    background: linear-gradient(160deg, #d4a84b 0%, #b88830 45%, #8a6020 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .big-front::before { content:''; position:absolute; inset:10px; border:2px dashed rgba(255,230,150,0.4); border-radius:10px; pointer-events:none; }
+
+  .bf-icon { font-size:64px; margin-bottom:12px; filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5)); }
+  .bf-num { font-size:13px; font-weight:700; color:rgba(60,30,5,0.75); background:rgba(255,240,180,0.35); border-radius:14px; padding:3px 14px; letter-spacing:2px; }
+  .bf-title { font-size:18px; font-weight:900; color:var(--dark-brown); text-align:center; padding:0 24px; margin-top:10px; line-height:1.45; text-shadow:0 1px 0 rgba(255,220,150,0.6); }
+  .bf-sub { font-size:13px; font-weight:700; color:rgba(50,25,5,0.7); text-align:center; padding:0 20px; margin-top:4px; }
+  .bf-hint { margin-top:18px; font-size:12px; color:rgba(60,30,5,0.55); letter-spacing:1px; }
+  .bf-bg-num { position:absolute; bottom:8px; right:16px; font-size:90px; font-weight:900; color:rgba(255,240,180,0.15); font-style:italic; line-height:1; }
+
+  .big-back {
+    background: linear-gradient(160deg, #f5e6c0 0%, #edd9a0 50%, #e0c880 100%);
+    transform: rotateY(180deg);
+    display: flex; flex-direction: column;
+    padding: 22px 20px 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    overflow-y: auto;
+  }
+  .big-back::before { content:''; position:absolute; inset:8px; border:1.5px solid rgba(140,90,30,0.25); border-radius:10px; pointer-events:none; }
+  .bb-num { font-size:11px; font-weight:700; color:#8a6030; letter-spacing:2px; margin-bottom:5px; }
+  .bb-title { font-size:18px; font-weight:900; color:var(--dark-brown); line-height:1.45; margin-bottom:12px; padding-bottom:10px; border-bottom:2px dashed rgba(140,90,30,0.35); }
+  .bb-desc { font-size:14.5px; color:#4a2e0e; line-height:1.75; flex:1; }
+  
+  .bb-point {
+    margin-top: 4px; margin-bottom: 38px;
+    padding:10px 12px; background:rgba(180,120,30,0.15);
+    border-left:4px solid #b08030; border-radius:0 8px 8px 0;
+    font-size:13px; color:#5a3508; line-height:1.65;
+  }
+  .bb-point strong { color:#7a4510; display:block; margin-bottom:3px; font-size:12px; letter-spacing:1px; }
+  
+  .bb-submit-btn {
+    display: block; width: 100%; padding: 14px;
+    background: linear-gradient(to right, #3a2010, #5a3a1a);
+    color: #f5e6c0; text-align: center; text-decoration: none;
+    border-radius: 10px; font-weight: 900; font-size: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: transform 0.1s, filter 0.2s;
+    border: 1.5px solid var(--gold); margin-bottom: 10px;
+  }
+  .bb-submit-btn:active { transform: scale(0.97); }
+
+  .overlay-close {
+    position:absolute; top:16px; right:16px;
+    width:36px; height:36px;
+    background:rgba(255,240,180,0.25);
+    border:2px solid rgba(255,240,180,0.5);
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; color:#f5e6c0;
+    cursor:pointer; z-index:110;
+  }
+
+  footer { text-align:center; margin-top:24px; color:rgba(80,50,20,0.6); font-size:11px; letter-spacing:2px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="header-banner">
+      <div class="t-sub">🚩 MISSION CHALLENGE</div>
+      <div class="t-main"><span>깃발</span>을 찾아라!</div>
+      <div class="t-desc">팀 미션 카드</div>
+    </div>
+    <div class="divider">⚓ 현재 미션 진행 중 ⚓</div>
+  </header>
+
+  <!-- 상단 고정 안내 박스 영역 -->
+  <div id="staticRulesContainer"></div>
+
+  <div class="grid" id="cardGrid"></div>
+  <footer>✦ &nbsp; 전주대학교 리더십 캠프 &nbsp; ✦</footer>
+</div>
+
+<!-- 앱 실행 시 나타나는 안내 팝업 -->
+<div class="rules-overlay" id="rulesOverlay">
+  <div class="rules-box" id="rulesBoxElement">
+    <div class="rules-title">📜 미션 완료 규칙 안내 😜</div>
+    <div class="rules-item"><strong>사진의 완성은 조원!</strong> 모든 팀원이 사진에 빠짐없이 나와야 성공입니다. 🕺💃✨</div>
+    <div class="rules-item"><strong>업로드 필수 절차!</strong> 구글 드라이브 업로드 후 반드시 <strong>파일명</strong>을 변경해 주세요! ✍️🔥</div>
+    <div class="rules-item">
+      <strong>파일명 형식:</strong> (팀명+미션 번호) <br>
+      <span class="example-tag">예시: 전주팀+4, 전주팀 15 🚩</span>
+    </div>
+    <button class="rules-confirm-btn" id="rulesConfirmBtn">확인했습니다! ⚓</button>
+  </div>
+</div>
+
+<!-- 미션 카드 상세 모달 -->
+<div class="overlay" id="overlay">
+  <div class="overlay-close" id="overlayClose">✕</div>
+  <div class="big-card-wrap" id="bigCardWrap">
+    <div class="big-card-inner" id="bigCardInner">
+      <div class="big-front" id="bigFront">
+        <div class="bf-bg-num" id="bfBgNum"></div>
+        <div class="bf-icon" id="bfIcon"></div>
+        <div class="bf-num" id="bfNum"></div>
+        <div class="bf-title" id="bfTitle"></div>
+        <div class="bf-sub" id="bfSub"></div>
+        <div class="bf-hint">▸ 탭하여 미션 확인</div>
+      </div>
+      <div class="big-back" id="bigBack">
+        <div class="bb-num" id="bbNum"></div>
+        <div class="bb-title" id="bbTitle"></div>
+        <div class="bb-desc" id="bbDesc"></div>
+        <div class="bb-point"><strong>📌 POINT</strong><span id="bbPoint"></span></div>
+        <a id="submitBtn" href="https://docs.google.com/forms/d/e/1FAIpQLSfkoc8z11AwzI1DrLllfOOC0_uH4wYxqAW5A3TvVZpc_wB5Eg/viewform?usp=sharing&ouid=106884591813640763602" target="_blank" class="bb-submit-btn">📸 사진/동영상 제출하기</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const missions = [
+  { num:"01", icon:"🤏", title:"격포를 내 손안에!", sub:"원근법 파괴자", desc:"카메라와 가까운 팀원이 손바닥을 펼치면, 멀리 있는 팀원이나 소노벨 리조트 건물이 손바닥 위에 올라간 것처럼 각도를 조절해 촬영하세요.", point:"\"어라? 리조트가 왜 이렇게 작아?\" 소리가 절로 나오게 리얼한 연기가 필수!" },
+  { num:"02", icon:"💨", title:"격포 장풍 대소동:", sub:"날아라 조원들", desc:"팀원 1명이 가운데에서 강력한 장풍을 쏘는 포즈를 취하고, 나머지 팀원들은 동시에 뒤로 날아가는 듯한 역동적인 포즈를 취하세요.", point:"발이 땅에서 떨어지는 순간을 포착하면 가산점 폭발! (연사 모드 추천)" },
+  { num:"03", icon:"🌍", title:"지구는 내가 밀게!", sub:"중력을 거스르는 자", desc:"팀원 1명 전원이 하나, 둘, 셋 구호에 맞춰 동시에 점프하세요.", point:"사진 속에 땅에 닿은 발이 하나도 없어야 성공입니다. 셔터 타이밍이 핵심!" },
+  { num:"04", icon:"🦶", title:"발 닿으면 탈락!", sub:"불가능한 4족 보행", desc:"10명의 팀원이지만 땅에 닿는 발의 개수를 최소화하세요. 서로 업고, 들고, 매달려 보세요.", point:"땅에 닿은 발이 적을수록 리더십 포인트 상승! (안전에 유의하세요)" },
+  { num:"05", icon:"🔤", title:"우리 조를 몸으로!", sub:"휴먼 텍스트", desc:"팀원들의 몸을 이용해 조 번호(예: 숫자 '1')나 팀의 핵심 단어를 바닥에 그려보세요.", point:"높은 곳에서 아래로 찍는 '항공샷'이나 위를 바라보는 '셀카 각도'가 멋지게 나옵니다." },
+  { num:"06", icon:"🤝", title:"약속은 지킨다!", sub:"그라운드 룰 마임", desc:"캠프 시작 전 정한 우리 팀만의 약속(경청, 리액션, 비난 금지 등) 중 하나를 골라 상황극을 사진으로 남기세요.", point:"설명을 보지 않아도 \"아! 이 팀은 리액션이 규칙이구나!\"라고 느껴지게 표현하는 것이 핵심!" },
+  { num:"07", icon:"🏛️", title:"무너지지 않는 신뢰:", sub:"인간 피라미드", desc:"팀원들이 서로를 지탱하며 인간 피라미드 또는 부채꼴 모양으로 펼쳐져서 안정적인 구조를 만드세요.", point:"\"함께 가면 멀리 간다\"는 메시지가 느껴지도록 팀원 전원의 손이 연결되어야 합니다." },
+  { num:"08", icon:"🦁", title:"우리 팀의 수호신:", sub:"조별 시그니처 동물", desc:"우리 조를 상징하는 동물을 정하고, 10명이 합체하여 하나의 거대한 동물을 형상화하세요.", point:"창의력이 돋보이는 동물일수록 '창의 리더십' 점수 가산!" },
+  { num:"09", icon:"⭐", title:"슈퍼스타 강림!", sub:"센터의 주인공은 나야 나", desc:"한 명의 팀원을 센터에 두고 나머지 팀원들이 후광을 비추거나 감탄하는 포즈를 취하세요.", point:"전주대학교의 슬로건인 'Superstar'를 가장 화려하게 표현해 보세요." },
+  { num:"10", icon:"🤟", title:"내 손안의 JJ:", sub:"핑거 로고 챌린지", desc:"팀원들의 손가락이나 팔을 조합해 전주대 영문 이니셜 'JJ'를 만드세요.", point:"카메라 렌즈 가까이에 'JJ'를 만들고, 그 사이로 팀원들의 얼굴이 모두 보이게 찍으면 인생샷 완성!" },
+  { num:"11", icon:"📚", title:"미래의 인재들:", sub:"인텔리 컨셉샷", desc:"해변에서 책을 읽거나 미래를 진지하게 토론하는 '지적인 대학생' 컨셉을 연출하세요.", point:"진지할수록 웃긴 '코믹 인텔리' 컨셉을 추천합니다." },
+  { num:"12", icon:"💅", title:"격포 런웨이:", sub:"홍보 모델 상륙", desc:"격포의 절경(채석강 등)을 배경으로 학교 홍보 팜플렛에 실릴 법한 당당한 모델 포즈를 취하세요.", point:"\"이 사진 전주대 홍보팀에서 사갈지도 몰라!\"라는 마음가짐으로 고퀄리티를 지향하세요." },
+  { num:"13", icon:"🐚", title:"자연에서 찾은 보물:", sub:"JJ 에코 로고", desc:"모래사장 위의 조개껍데기, 미역, 돌 등을 모아 'JJ' 로고를 완성하고 조원들이 그 주위를 감싸며 촬영하세요.", point:"자연 훼손은 금물! 주변에 떨어진 자연물만 활용하는 것이 규칙입니다." },
+  { num:"14", icon:"🎬", title:"15초의 마법:", sub:"전주대 폼 미쳤다 (숏폼)", desc:"\"전주대학교에 오면 [ ]도 할 수 있다!\"라는 문구를 완성하는 릴레이 영상을 15초 내외로 찍으세요.", point:"틱톡이나 릴스 느낌으로 신나고 빠르게 편집(또는 원테이크)하세요." },
+  { num:"15", icon:"🏖️", title:"격포의 모래 장인:", sub:"JJ 3D 랜드마크", desc:"깃발 주변 모래를 이용해 전주대의 상징물(스타센터 등)이나 로고를 3D로 입체감 있게 조각하세요.", point:"평면은 노노! 입체적인 예술 감각을 발휘해 보세요." }
+];
+
+const grid = document.getElementById('cardGrid');
+const overlay = document.getElementById('overlay');
+const inner = document.getElementById('bigCardInner');
+const rulesOverlay = document.getElementById('rulesOverlay');
+const rulesConfirmBtn = document.getElementById('rulesConfirmBtn');
+const rulesBox = document.getElementById('rulesBoxElement');
+const staticContainer = document.getElementById('staticRulesContainer');
+
+let isFlipped = false;
+let openTimer = null;
+
+function openCard(m) {
+  document.getElementById('bfBgNum').textContent = m.num;
+  document.getElementById('bfIcon').textContent = m.icon;
+  document.getElementById('bfNum').textContent = 'MISSION ' + m.num;
+  document.getElementById('bfTitle').textContent = m.title;
+  document.getElementById('bfSub').textContent = m.sub;
+  
+  document.getElementById('bbNum').textContent = 'MISSION ' + m.num;
+  document.getElementById('bbTitle').textContent = m.title + ' ' + m.sub;
+  document.getElementById('bbDesc').textContent = m.desc;
+  document.getElementById('bbPoint').textContent = m.point;
+
+  isFlipped = false;
+  inner.classList.remove('flipped');
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  openTimer = setTimeout(() => {
+    inner.classList.add('flipped');
+    isFlipped = true;
+  }, 400);
+}
+
+function closeCard() {
+  clearTimeout(openTimer);
+  if (isFlipped) {
+    inner.classList.remove('flipped');
+    isFlipped = false;
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }, 650);
+  } else {
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
+
+// 그리드 렌더링 루프
+missions.forEach((m, index) => {
+  const el = document.createElement('div');
+  // 7번 미션 (index 6)만 클릭 가능하도록 설정
+  const isLocked = index !== 6; 
+  el.className = 'card-thumb' + (isLocked ? ' locked' : '');
+  
+  let lockHTML = isLocked ? `
+    <div class="lock-overlay">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-text">${m.num}</div>
+    </div>
+  ` : '';
+
+  el.innerHTML = `
+    ${lockHTML}
+    <div class="thumb-bg-num">${m.num}</div>
+    <div class="thumb-icon">${m.icon}</div>
+    <div class="thumb-num">MISSION ${m.num}</div>
+    <div class="thumb-title">${m.title}<br><span style="opacity:.8">${m.sub}</span></div>
+    <div class="thumb-hint">▸ ${isLocked ? '잠겨있음' : '탭하기'}</div>
+  `;
+  
+  if (!isLocked) {
+    el.addEventListener('click', () => openCard(m));
+  }
+  grid.appendChild(el);
+});
+
+// 안내 팝업 확인 시 동작
+rulesConfirmBtn.addEventListener('click', () => {
+  rulesOverlay.classList.remove('active');
+  rulesConfirmBtn.style.display = 'none';
+  
+  setTimeout(() => {
+    staticContainer.appendChild(rulesBox);
+    staticContainer.style.display = 'block';
+    
+    // 7번 미션 (index 6)을 자동으로 실행
+    setTimeout(() => {
+      openCard(missions[6]); 
+    }, 400);
+  }, 500);
+});
+
+document.getElementById('submitBtn').addEventListener('click', (e) => e.stopPropagation());
+document.getElementById('bigCardWrap').addEventListener('click', (e) => {
+  if(e.target.closest('.bb-submit-btn')) return;
+  if (!isFlipped) {
+    inner.classList.add('flipped');
+    isFlipped = true;
+  } else {
+    closeCard();
+  }
+});
+document.getElementById('overlayClose').addEventListener('click', e => { e.stopPropagation(); closeCard(); });
+overlay.addEventListener('click', e => { if (e.target === overlay) closeCard(); });
+
+window.onload = () => {
+  setTimeout(() => {
+    rulesOverlay.classList.add('active');
+  }, 600);
+};
+</script>
+</body>
+</html>
